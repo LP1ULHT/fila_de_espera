@@ -19,19 +19,25 @@ typedef struct s_pessoa {
 	struct s_pessoa * next;
 } pessoa;
 
-typedef pessoa * FILA;
 
-int Inserir (FILA *, pessoa);
-void Apagar (FILA *);
-void listar (FILA);
+int Inserir (pessoa **, pessoa **, pessoa);
+void Apagar (pessoa **, pessoa **);
+void listar (pessoa *);
 
 int main(int argc, char **argv)
 {
 	pessoa aux;
-	FILA primeiro = NULL; // importante inicializar a lista a NULL
+	pessoa * primeiro = NULL;
+	pessoa * ultimo = NULL;
 	FILE * fp = NULL;
 	char input[DIM];
 	char option;
+	int i = 0;
+
+	for (i = 0 ; i < argc ; i++)
+	{
+		printf("Argumento %d = %s\n", i, argv[i]);
+	}
 
 	if (argc < 2)
 	{
@@ -51,7 +57,7 @@ int main(int argc, char **argv)
 		if (fscanf(fp, "%s %d %[^\n]", aux.nr, &aux.id, aux.nome) != 3)
 			continue;
 
-		if (!Inserir(&primeiro, aux))
+		if (!Inserir(&primeiro, &ultimo, aux))
 		{
 			puts("Error: out of memory!");
 			exit(1);
@@ -72,13 +78,14 @@ int main(int argc, char **argv)
 		switch(toupper(option))
 		{
 		case OPT_REM:
-			Apagar(&primeiro);
+			Apagar(&primeiro, &ultimo);
 			continue;
 
 		case OPT_ADD:
 			if (sscanf(input, " %c %s %d %[^\n]", &option, aux.nr, &aux.id, aux.nome) != 4)
 				continue;
-			Inserir(&primeiro, aux);
+			Inserir(&primeiro, &ultimo, aux);
+			break;
 
 		case OPT_LIST:
 			listar(primeiro);
@@ -96,49 +103,47 @@ int main(int argc, char **argv)
 	exit(0);
 }
 
-int Inserir (FILA * lista, pessoa p)
+int Inserir (pessoa ** primeiro, pessoa ** ultimo, pessoa p)
 {
-	pessoa * t;
 	pessoa * aux = (pessoa *) malloc(sizeof(pessoa));
 	if (aux == NULL)
 		return 0;		// ERROR: out of memory
-	strcpy(aux -> nome, p.nome);
-	strcpy(aux -> nr, p.nr);
-	aux -> id = p.id;
-	aux -> next = NULL;
+	
+	*aux = p; /* copiar informacao para a memoria dinamica */
 
-	if (*lista == NULL)
+	if (*ultimo != NULL) /* a lista nao esta vazia */
 	{
-		*lista = aux;
+		(*ultimo) -> next = aux;
+		*ultimo = aux;
 		return 1;
 	}
+	*primeiro = aux;
+	*ultimo = aux;
 
-	// percorrer a lista ate que o next seja NULL
-	for (t = *lista ; t->next != NULL ; t = t -> next)
-		; 
-
-	t->next = aux;
-	return 1;			// SUCCESS
+	return 1;
 }
 
-void Apagar (FILA * lista)
+void Apagar (pessoa ** primeiro, pessoa ** ultimo)
 {
 	pessoa * aux;
-	if (*lista == NULL)	// lista esta vazia
+	if (*primeiro == NULL)	/* lista esta vazia */
 		return;
 
-	aux = *lista;
-	*lista = aux -> next; // alteramos o primeiro
+	aux = *primeiro;
+	*primeiro = aux -> next; /* alteramos o primeiro */
 
-	// libertamos a memoria que deixa de ser necessaria
+	if (*primeiro == NULL) /* se a lista ficou vazia, actualizamos também o ultimo */
+		*ultimo = NULL;
+
+	/* libertamos a memoria que deixa de ser necessaria */
 	free(aux);
 }
 
-void listar(FILA lista)
+void listar(pessoa * primeiro)
 {
 	pessoa * t;
 
-	for (t = lista ; t != NULL ; t = t -> next)
+	for (t = primeiro ; t != NULL ; t = t -> next)
 	{
 		printf("%s %d %s\n", t->nr, t->id, t->nome);
 	}
